@@ -1,0 +1,10 @@
+function makeMesh(helicopter,N)
+%makeMesh Return an arry of discretized radial coordinates
+
+helicopter.dR = (helicopter.Radius-helicopter.CutOut)/N;
+space = 0:1:N-1;
+
+R_array = R0 + dR.*(space + 0.5);
+r_array = R_array ./ R;
+end
+
