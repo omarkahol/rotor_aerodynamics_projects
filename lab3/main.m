@@ -3,22 +3,23 @@ addpath('/home/omarkahol/MATLAB/ROTOR_AERODYNAMICS/lab3/lib');
 
 dataFile;
 helicopter = buildHelicopter(R,R0,c,Nb);
-N = 500;
+N = 50;
 
 helicopter = makeMesh(helicopter,N);
 
 h = 0; %altitude
-theta = 12; %degrees
-theta1s = 5; %degrees
-theta1c = 1; %degrees
-beta = 3;
-alfa_sh = 1;
-V = 10;
+theta = 8.2391; %degrees
+theta1s = 2.53; %degrees
+theta1c = 0; %degrees
+beta = 1.9308;
+alfa_sh = -1.0694;
+V = 12.9857;
 
 
 
 conf = flightConfiguration(h,theta,RPM,V,theta1s,theta1c,beta,alfa_sh);
 hsol = hoveringSolver(helicopter,conf);
 
-sol = forewardFlightSolver(hsol,helicopter,conf,100);
+sol = forewardFlightSolver(hsol,helicopter,conf,50);
+data = postProcessor(helicopter,conf,sol);
 

@@ -9,7 +9,7 @@ helicopter = makeMesh(helicopter,N);
 
 h = 0; %altitude
 theta = 12; %degrees
-Vup = 4; %meters per second
+Vup = 0; %meters per second
 
 conf = flightConfiguration(h,theta,RPM,Vup);
 sol = solver(helicopter,conf);

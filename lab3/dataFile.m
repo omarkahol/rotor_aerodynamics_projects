@@ -1,7 +1,7 @@
-R = 0.8; %m
-c = 0.06; %m
-R0 = 0.2; %m cutout 
-Nb = 4;
-RPM = 1200;
+R = 1.143; %m
+c = 0.1905; %m
+R0 = 0.1950; %m cutout 
+Nb = 2;
+RPM = 1209.67;
 
 sigma = Nb*c/(pi*R);

@@ -1,10 +1,10 @@
 function solution = solver(helicopter,conf)
 
 solution = struct();
-ITMAX = 1000;
+ITMAX = 10000;
 TOL = 1e-12;
-DAMP_l = 0.5;
-DAMP_a = 0.5;
+DAMP_l = 0.1;
+DAMP_a = 0.1;
 
 N = length(helicopter.Mesh());
 solution.InflowRatio = zeros(1,N);
@@ -47,7 +47,7 @@ for i = 1:N
         F = (2/pi)*acos(exp(-f));
         
         %thrust coeff
-        ct = 0.5*helicopter.Solidity*(cos(phi)*cl -sin(phi)*cd)*(v^2 + l_old^2);
+        ct = real(0.5*helicopter.Solidity*(cos(phi)*cl -sin(phi)*cd)*(v^2 + l_old^2))*helicopter.dR/helicopter.Radius;
         
         %recompute lambda
         l_new = (solution.AxialInflowRatio +...
@@ -55,7 +55,7 @@ for i = 1:N
         l_new = l_old + DAMP_l*(l_new-l_old);
         
         %compute cq
-        cq = 0.5*helicopter.Solidity*(sin(phi)*cl + cos(phi)*cd)*(v^2 + l_new^2)*r;
+        cq = 0.5*helicopter.Solidity*(sin(phi)*cl + cos(phi)*cd)*(v^2 + l_new^2)*r*helicopter.dR/helicopter.Radius;
         
         %recompute a
         a_new = cq/(4*l_new*r^3);
