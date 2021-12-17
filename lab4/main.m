@@ -1,5 +1,5 @@
 clear variables; clc;
-addpath('/home/omarkahol/MATLAB/ROTOR_AERODYNAMICS/lab5/lib');
+addpath('/home/omarkahol/MATLAB/ROTOR_AERODYNAMICS/lab4/lib');
 
 %-----------------------------------
 %    STRUCTURE
@@ -16,7 +16,7 @@ GAMMA = 8; %assumed locke number for mass distribution
 H = 0; %altitude [m]
 V = 12.9857; %foreward flight velocity [m/s]
 RPM = 1209.67; %rpm
-ASHAFT = -1.0694; %angle of attack of the shaft [°]
+ASHAFT = 1.0694; %angle of attack of the shaft [°]
 THETA = 8.2391; %collective pitch angle [°]
 T1S = 2.53; %sinusoidal cyclic pitch angle [°]
 T1C = 0; %cosinusoidal cyclic pitch angle [°]
@@ -24,15 +24,15 @@ T1C = 0; %cosinusoidal cyclic pitch angle [°]
 %-----------------------------------
 %    SOLVER
 %------------------------------------
-SWEEPS = 20; %number of complete rotations
-NT = 10; %number of time steps per sweep
-NP = 50; %number of blade panels
+SWEEPS = 10; %number of complete rotations
+NT = 1000; %number of time steps per sweep
+NP = 25; %number of blade panels
 ITMAX = 1000; %maximum number of iterations for BLADE convergence
-ITMAX_FZERO = 100; %maximum number of iterations for nonlinear problem solution
+ITMAX_FZERO = 1000; %maximum number of iterations for nonlinear problem solution
 DAMP = 0.1; %damping function for BLADE convergence
 DAMP_FZERO = 0.9; %damping for nonlinear problem solution
-TOL = 1e-7; %tolerance for BLADE convergence
-TOL_FZERO = 1e-7; %tolerance for nonlinear problem solution
+TOL = 1e-10; %tolerance for BLADE convergence
+TOL_FZERO = 1e-10; %tolerance for nonlinear problem solution
 
 %-----------------------------------
 %    BUILD THE STRUCTURES

@@ -1,116 +1,107 @@
 function sol = forewardFlightSolver(data,solver)
     
+    %----------------------------------------------------------------------
+    % SOLUTION
+    %----------------------------------------------------------------------
     sol = struct();
     sol.ct = zeros(solver.Sweeps*solver.NT,data.NP);
     sol.cq = zeros(solver.Sweeps*solver.NT,data.NP);
     sol.inflow_ratio = zeros(solver.Sweeps*solver.NT,data.NP);
-    sol.it_required = zeros(solver.Sweeps*solver.NT);
+    sol.it_required = zeros(1,solver.Sweeps*solver.NT);
     sol.CT = zeros(1,solver.Sweeps*solver.NT);
     sol.CQ = zeros(1,solver.Sweeps*solver.NT);
     sol.beta = zeros(1,solver.Sweeps*solver.NT);
     sol.dbeta = zeros(1,solver.Sweeps*solver.NT);
+    sol.ddbeta = zeros(1,solver.Sweeps*solver.NT);
+    sol.alfa_e = zeros(solver.Sweeps*solver.NT,data.NP);
+    sol.err = zeros(1,solver.Sweeps*solver.NT);
+    sol.v = zeros(solver.Sweeps*solver.NT,data.NP);
+
+    %----------------------------------------------------------------------
+    %COMMON INPUTS
+    %----------------------------------------------------------------------
+    %nondimensional time for Wagner
+    s = (2*data.mu./data.cr).*solver.timeMesh;
+    ds = (2*data.mu./data.cr).*solver.dt;
+    %helicopter mesh
     r = data.mesh;
+    %Pradtl deficiency model --> sum dct up to index
     index = floor(0.97*data.NP);
+    %Wagner coefficients
+    A1 = 0.165;
+    A2 = 0.335;
+    b1 = 0.0455;
+    b2 = 0.3;
     %----------------------------------------------------------------------
     %HOVERINGSOLUTION
     %----------------------------------------------------------------------
-    hoveringSolution = hoveringSolver(data);
-    %-----------------------------------------------------------------------
-    
+    hoveringSolution = hoveringSolver(data);   
     %----------------------------------------------------------------------
     %MEMORY ALLOCATION
     %----------------------------------------------------------------------
     Cl=zeros(1,data.NP);
     Cd=zeros(1,data.NP);
-    %derivative of pitch
-    tv = -data.theta1s*sin(solver.timeMesh)+...
-        -data.theta1c*cos(solver.timeMesh);
-    dtv = -data.theta1s*sin(solver.timeMesh) +...
-        data.theta1c*cos(solver.timeMesh);
-    ddtv = data.theta1s*cos(solver.timeMesh) +...
-        data.theta1c*sin(solver.timeMesh);
-    
-    %saved parameters
-    lambda = zeros(solver.NT*solver.Sweeps,data.NP);
-    beta = zeros(1,solver.NT*solver.Sweeps+1);
-    dbeta = zeros(1,solver.NT*solver.Sweeps+1);
-    ddbeta = zeros(1,solver.NT*solver.Sweeps+1);
-    lambdap = zeros(solver.NT*solver.Sweeps, data.NP);
-    
-    %----------------------------------------------------------------------
-
-
+    %pitch
+    theta = data.theta-data.theta1s*sin(s)+...
+        -data.theta1c*cos(s);
+    %wagner deficiency functions
+    Xw = zeros(solver.Sweeps*solver.NT,data.NP);
+    Yw = zeros(solver.Sweeps*solver.NT,data.NP);
     %----------------------------------------------------------------------
     % START THE TIME ITERATION
     %----------------------------------------------------------------------
-    for n = 4:solver.NT*solver.Sweeps
+    for n = 3:solver.NT*solver.Sweeps
 
-        clc;
+       
         fprintf('Computing iteration %d out of %d\n',n,...
             solver.NT*solver.Sweeps);
 
         psi = solver.timeMesh(n);
-        
-        %------------------------------------------------------------------
-        % INITIALIZE OLD SOLUTION FROM HOVERING AND BETA, H FROM PREV IT
-        l_old = hoveringSolution.InflowRatio;
-        %------------------------------------------------------------------
-
         err = solver.Tol+1;
         it = 0;
+        l_old = hoveringSolution.InflowRatio;
         %------------------------------------------------------------------
         % START CONVERGENCE WHILE LOOP
         %------------------------------------------------------------------
         while err > solver.Tol && it < solver.ItMax
-            it = it + 1;
-
-            %--------------------------------------------------------------
-            % COMPUTE THE DERIVATIVES
-            %BETA FLUCTUATING
-            betav = beta(n) - mean(beta(5:n));
-            dbetav = d(beta-mean(beta(5:n)),n,solver.dt,false);
-            ddbetav = dd(beta-mean(beta(5:n)),n,solver.dt,false);
-            %LAMBDA
-            dlambda = d(lambda,n,solver.dt,true);
-            ddlambda = dd(lambda,n,solver.dt,true);
-            %LAMBDA FLUCTUATING
-            dlambdav = d(lambda-mean(lambda(5:n,:),1),n,solver.dt,true);
-            ddlambdav = dd(lambda-mean(lambda(5:n,:),1),n,solver.dt,true);
-            %LAMBDA P FLUCTUATING
-            dlambdapv = d(lambdap-mean(lambdap(5:n,:)),n,solver.dt,true);
-            %LAMBDA P MEAN
-            dlambdap0 = (mean(lambdap(5:n,:),1) - ...
-                mean(lambdap(5:n-1,:),1))./solver.dt;
             %--------------------------------------------------------------
             % COMPUTE THE VELOCIETIES
             %--------------------------------------------------------------
-            vt = cos(beta(n))*r + data.mu*sin(psi)*cos(data.alfashaft);
-            vp = l_old + data.mu*sin(data.alfashaft)*cos(beta(n)) + data.mu*...
-                cos(data.alfashaft)*cos(psi)*sin(beta(n)) + ...
-                data.mesh.*dbeta(n);
-            v = sqrt(vt.^2 + vp.^2);
+            vt = r*cos(sol.beta(n)) + data.mu*sin(psi)*cos(data.alfashaft);
+            vp = l_old + data.mu*sin(data.alfashaft)*cos(sol.beta(n))  + data.mu*...
+                cos(data.alfashaft)*cos(psi)*sin(sol.beta(n)) + ...
+                (r-data.r0).*sol.dbeta(n);
+            sol.v(n,:) = sqrt(vt.^2 + vp.^2);
             %--------------------------------------------------------------
             % AERODYNAMIC MODEL
             %--------------------------------------------------------------
-            % Compute the angle of attack
-            alfa_atg = (-data.F.*dlambdapv -dlambdap0 +data.G.*ddlambdav+...
-                data.G.*lambda(n,:).*(dtv(n)+betav))./vt;
-            alfa = data.theta + data.F.*tv(n) + atan(alfa_atg);
+            % Compute the induced angle of attack
             phi = atan(vp./vt);
+            %equivalent angle of attack
+            sol.alfa_e(n,:) = theta(n) + (r./v).*sol.dbeta(n);
+            %step in the angle of attack times the velocity
+            dalfa_e = sol.v(n,:).*sol.alfa_e(n,:)-...
+                sol.v(n,:).*sol.alfa_e(n-1,:);
+            %wagner deficiency functions
+            Xw(n,:) = exp(-b1*ds).*Xw(n-1,:) + A1.*dalfa_e...
+                .*exp(-b1*0.5*ds);
+            Yw(n,:) = exp(-b2*ds).*Yw(n-1,:) + A2.*dalfa_e...
+                .*exp(-b2*0.5*ds);
+            %
+            alfa_w = sol.alfa_e(n,:) - Xw(n,:) - Yw(n,:);
             %Compute the mach number
             M = data.Mtip .* v;
             %Equivalent lift and drag
-            i = 1;
-            for a = alfa-phi
-                [cl_sect,cd_sect,~]=cpcrcm(a,M(i));
+            for i = 1:length(alfa_w)
+                [cl_sect,cd_sect,~]=cpcrcm(alfa_w(i)-phi(i),M(i));
                 Cl(i) = cl_sect;
                 Cd(i) = cd_sect;
-                i=i+1;
             end
             %Correction for the non circulatory part
-            Cl = Cl + 0.5*pi*data.cr.*((dtv(n)+beta(n-1))./lambda(n,:) +...
-                ddlambdav./lambda(n,:)  - 0.25.*data.cr.*...
-                (ddtv(n)+ddbetav)./lambda(n,:));
+            ddalfa_e = (sol.alfa_e(n)-2*sol.alfa_e(n-1)+sol.alfa_e(n-2))...
+                ./(solver.dt^2);
+            Cl = Cl + 0.5*pi*data.cr.*(dalfa_e./(solver.dt.*v)+...
+                r.*sol.ddbeta(n)./(v.^2) - data.cr*0.5.*ddalfa_e./(v.^2));
             %--------------------------------------------------------------
             % BLADE ELEMENT MOMENTUM 
             %--------------------------------------------------------------
@@ -119,7 +110,6 @@ function sol = forewardFlightSolver(data,solver)
                 .*data.dr);
             cq = real(0.5*data.solidity*(v.^2).*(sin(phi).*Cl+cos(phi).*Cd)...
                 .*data.dr);
-            ct(isnan(ct)) = 0.0;
             CT = sum(ct(1:index));
             % DREES MODEL FOR THE VELOCITY DISTRIBUTION
             mux = data.mu*cos(data.alfashaft);
@@ -139,28 +129,26 @@ function sol = forewardFlightSolver(data,solver)
                 it_in = it_in+1;
                 l_old_in = real(l_old_in + solver.DampFzero.*(l_new -l_old_in));
             end
-
             %--------------------------------------------------------------
             % PREPARE NEXT ITERATION 
             %--------------------------------------------------------------
             err = norm(l_old-l_new);
             l_old = real(l_old + solver.Damp.*(l_new -l_old));
-            lambdap(n,:)=vp;
-            lambda(n,:)=v;
+            it = it + 1;
         end
-        %------------------------------------------------------------------
+        %--------------------------------------------------------------
         % DYNAMIC EQUATION
-        %------------------------------------------------------------------
+        %--------------------------------------------------------------
         if n ~= solver.NT*solver.Sweeps
-            ddbeta(n) = 3*sum((1./data.mass).*(data.mesh(1:index)-...
-                data.r0).*ct(1:index)) - ...
-                3*sum((data.mesh(1:index)-data.r0)...
-                .*data.mesh(1:index).*sin(beta(n)));
-            beta(n+1) = beta(n) + ((23/12)*dbeta(n)-(16/12)*dbeta(n-1)+...
-                (5/12)*dbeta(n-2))*solver.dt;
-            dbeta(n+1) = dbeta(n) + ((23/12)*ddbeta(n)-(16/12)*ddbeta(n-1)+...
-                (5/12)*ddbeta(n-2))*solver.dt;
+            sol.ddbeta(n) = 0.5*(3/data.mass)*sum((r-data.r0).*ct) - ...
+                3*sin(sol.beta(n))*sum((r-data.r0).*r);
+            
+            sol.beta(n+1) = sol.beta(n) + (1.5*sol.dbeta(n)-...
+                0.5*sol.dbeta(n-1))*solver.dt;
+            sol.dbeta(n+1) = sol.dbeta(n) + (1.5*sol.ddbeta(n)-...
+                0.5*sol.ddbeta(n-1))*solver.dt;
         end
+        
         %------------------------------------------------------------------
         % SAVE RESULTS
         %------------------------------------------------------------------
@@ -169,9 +157,8 @@ function sol = forewardFlightSolver(data,solver)
         sol.inflow_ratio(n,:)=l_new;
         sol.CT(n) = CT;
         sol.CQ(n) = sum(cq);
-        sol.beta(n) = beta(n);
-        sol.dbeta(n) = dbeta(n);
         sol.it_required(n)=it;
+        sol.err(n) = err;
     end
 end
 
