@@ -28,6 +28,7 @@ data.theta = configuration.CollectivePitch;
 data.theta1s = configuration.PitchSin;
 data.theta1c= configuration.PitchCosin;
 data.alfashaft= configuration.AlfaShaft;
+data.LockeNumber = helicopter.LockeNumber;
 
 end
 

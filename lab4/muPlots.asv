@@ -1,0 +1,21 @@
+CPs = [];
+CQs = [];
+CTs = [];
+V = 5:10:105;
+
+for sol = sols
+    CPs = [CPs,mean(sol.CP(1500:end))];
+    CPi = [CPi,CPi_el]; 
+    CQs =[CQs,mean(sol.CQ(1500:end))];
+    CTs = [CTs,mean(sol.CT(1500:end))];
+end
+
+mu = V ./ (fc.Omega*h.Radius);
+figure(1);
+hold on;
+title('Total Power');
+plot(mu,CPs,'k-','LineWidth',2);
+xlabel('mu');
+ylabel('CP');
+ [~,cd0,~] = cpcrcm(0,0);
+plot(mu,(data.solidity/8)*cd0.*(1+4.7.*mu.^2) + 1.5*CTs.^2 ./ (2*mu),'r--','LineWidth',2);

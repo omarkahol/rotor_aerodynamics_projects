@@ -8,7 +8,7 @@ R = 1.143; %m
 C = 0.1905; %m
 R0 = 0.1950; %m cutout 
 NB = 2; %number of blades
-GAMMA = 8; %assumed locke number for mass distribution
+GAMMA = 4; %assumed locke number for mass distribution
 
 %------------------------------------
 %    DYNAMICS
@@ -24,7 +24,7 @@ T1C = 0; %cosinusoidal cyclic pitch angle [°]
 %-----------------------------------
 %    SOLVER
 %------------------------------------
-SWEEPS = 1; %number of complete rotations
+SWEEPS = 5; %number of complete rotations
 NT = 200; %number of time steps per sweep
 NP = 50; %number of blade panels
 ITMAX = 1000; %maximum number of iterations for BLADE convergence

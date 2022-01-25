@@ -8,6 +8,7 @@ DAMP_a = 0.1;
 
 N = length(helicopter.Mesh());
 solution.InflowRatio = zeros(1,N);
+solution.TheoreticalInflowRatio = zeros(1,N);
 solution.SwirlEffect = zeros(1,N);
 solution.ThrustCoefficient = zeros(1,N);
 solution.TorqueCoefficient = zeros(1,N);
@@ -23,6 +24,7 @@ for i = 1:N
     
     r = helicopter.Mesh(i)/helicopter.Radius;
     l_old = theoreticalSolution(helicopter.Solidity,2*pi,conf.AngleOfAttack,r,solution.AxialInflowRatio);
+    solution.TheoreticalInflowRatio(i) = l_old;
     a_old = 0;
     
     while (it < ITMAX) && (err > TOL)
@@ -47,15 +49,16 @@ for i = 1:N
         F = (2/pi)*acos(exp(-f));
         
         %thrust coeff
-        ct = real(0.5*helicopter.Solidity*(cos(phi)*cl -sin(phi)*cd)*(v^2 + l_old^2))*helicopter.dR/helicopter.Radius;
+        ct = real(0.5*helicopter.Solidity*(cos(phi)*cl -sin(phi)*cd)*(v^2 + l_old^2));
         
         %recompute lambda
-        l_new = (solution.AxialInflowRatio +...
-            sqrt(solution.AxialInflowRatio^2 + ct/(r*F)))*0.5;
+        l_new = real((solution.AxialInflowRatio +...
+            sqrt(solution.AxialInflowRatio^2 + ct/(r*F)))*0.5);
+        
         l_new = l_old + DAMP_l*(l_new-l_old);
         
         %compute cq
-        cq = 0.5*helicopter.Solidity*(sin(phi)*cl + cos(phi)*cd)*(v^2 + l_new^2)*r*helicopter.dR/helicopter.Radius;
+        cq = 0.5*helicopter.Solidity*(sin(phi)*cl + cos(phi)*cd)*(v^2 + l_new^2)*r;
         
         %recompute a
         a_new = cq/(4*l_new*r^3);

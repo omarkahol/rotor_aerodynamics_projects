@@ -23,3 +23,13 @@ hsol = hoveringSolver(helicopter,conf);
 sol = forewardFlightSolver(hsol,helicopter,conf,50);
 data = postProcessor(helicopter,conf,sol);
 
+[X,Y,L,l] = sweepPlot(helicopter.Mesh,linspace(0,2*pi,50),real(sol.CT));
+figure(1);
+contourf(X,Y,L,linspace(min(min(L)),max(max(L)),1000),'edgecolor','none');
+colormap("jet");
+colorbar('southoutside');
+daspect([1 1 1]);
+title('Inflow Ratio');
+xlabel('x');
+ylabel('y');
+

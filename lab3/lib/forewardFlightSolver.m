@@ -5,8 +5,12 @@ sol = struct();
 sol.TipVelocity = helicopter.Radius*conf.Omega;
 
 dPsi = 2*pi / Nt;
-Psi = 0;
+Psi = -dPsi;
 N = length(helicopter.Mesh());
+dr = helicopter.dR/helicopter.Radius;
+
+%Pradtl deficiency model --> sum dct up to index
+index = floor(0.97*N);
 
 ITMAX = 1000;
 TOL = 1e-6;
@@ -18,7 +22,7 @@ sol.InflowRatio = zeros(Nt,N);
 sol.CT = zeros(Nt,N);
 
 for i = 1:1:Nt 
-    Psi = Psi + (i-1)*dPsi;
+    Psi = Psi + dPsi;
     
     for j = 1:1:N
         

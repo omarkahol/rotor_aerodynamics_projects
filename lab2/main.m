@@ -3,12 +3,12 @@ addpath('/home/omarkahol/MATLAB/ROTOR_AERODYNAMICS/lab2/lib');
 
 dataFile;
 helicopter = buildHelicopter(R,R0,c,Nb);
-N = 500;
+N = 10000;
 
 helicopter = makeMesh(helicopter,N);
 
 h = 0; %altitude
-theta = 12; %degrees
+theta = 8; %degrees
 Vup = 0; %meters per second
 
 conf = flightConfiguration(h,theta,RPM,Vup);
@@ -29,8 +29,9 @@ xlabel('r [-]');
 ylabel('dQ_T / dR');
 
 
-figure(3);
+figure(3); hold on;
 plot(helicopter.Mesh/helicopter.Radius,sol.InflowRatio,'k-','LineWidth',2);
+plot(helicopter.Mesh/helicopter.Radius,sol.TheoreticalInflowRatio,'r--','LineWidth',2);
 title('Total inflow ratio \Lambda  in the blade');
 xlabel('r [-]');
 ylabel('\Lambda');
@@ -53,3 +54,4 @@ plot(helicopter.Mesh/helicopter.Radius,sol.IterationsRequired,'k-','LineWidth',2
 title('it necessary for convergence');
 xlabel('r [-]');
 ylabel('it');
+

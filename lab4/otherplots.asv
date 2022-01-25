@@ -1,0 +1,28 @@
+figure(1);
+hold on;
+title('CT');
+plot(solver.timeMesh,sol.CT,'k-','LineWidth',2);
+xlabel('t [-]');
+ylabel('CT [-]');
+
+
+
+figure(2);
+hold on;
+title('flap')
+plot(solver.timeMesh,rad2deg(sol.beta),'k-','LineWidth',2);
+xlabel('t [-]');
+ylabel('beta [-]');
+
+% Windowing del segnale
+CT = sol.CT(1000:end);
+a = 0.5;
+w = a-(1-a)*cos(2*pi*(1:1:length(CT))/length(CT)); %Hanning window
+CT = CT .* w; % segnale windowed 
+dft = abs(fft(CT-mean(CT)));
+dt = solver.dt;
+T = solver.timeMesh(end);
+df = 1/T;
+fnyq = (1/dt) * 0.5;
+freq 
+

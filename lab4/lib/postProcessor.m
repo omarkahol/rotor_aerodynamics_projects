@@ -1,4 +1,4 @@
-function data = postProcessor(helicopter,conf,sol)
+function data = postProcessor(data,solver,solution)
     data = struct();
     data.AdimensionalQuantities = struct();
     data.DimensionalQuantities = struct();

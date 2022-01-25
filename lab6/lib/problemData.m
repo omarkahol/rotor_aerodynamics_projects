@@ -7,7 +7,8 @@ data.cr = helicopter.Chord/helicopter.Radius;
 data.r0 = helicopter.CutOut/helicopter.Radius;
 data.solidity = helicopter.Solidity;
 data.mesh = helicopter.Mesh ./ helicopter.Radius; 
-data.mass = (1.2250/configuration.Density)*data.cr*6*pi/helicopter.LockeNumber;
+data.mass = helicopter.LockeNumber/(4*pi);
+data.gravity = 9.81/(helicopter.Radius*configuration.Omega^2);
 data.Mtip = configuration.Omega*helicopter.Radius/configuration.SpeedOfSound;
 data.mu = configuration.ForewardVelocity/(configuration.Omega*helicopter.Radius);
 
@@ -28,6 +29,7 @@ data.theta = configuration.CollectivePitch;
 data.theta1s = configuration.PitchSin;
 data.theta1c= configuration.PitchCosin;
 data.alfashaft= configuration.AlfaShaft;
+data.LockeNumber = helicopter.LockeNumber;
 
 end
 

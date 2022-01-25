@@ -43,11 +43,25 @@ function sol = forewardFlightSolver(data,solver)
     %----------------------------------------------------------------------
     % START THE TIME ITERATION
     %----------------------------------------------------------------------
-    for n = 4:solver.NT*solver.Sweeps
+    beta_zero = 0;
+    beta_180 = 0;
+    for n = 3:solver.NT*solver.Sweeps
 
-        clc;
-        fprintf('Computing iteration %d out of %d\n',n,...
-            solver.NT*solver.Sweeps);
+        %current sweep
+        sweep = floor(n/solver.NT)+1;
+        sweep_perc = (n/solver.NT - sweep+1)*100;
+
+        if abs(sweep_perc) < 1/solver.NT
+            beta_zero = beta(n);
+            fprintf('Sweep number %d out of %d is %3.2f %% complete\n',sweep,...
+            solver.Sweeps,sweep_perc);
+        end
+
+        if abs(sweep_perc-50) < 1/solver.NT
+            beta_180 = beta(n);
+            fprintf('Sweep number %d out of %d is %3.2f %% complete\n',sweep,...
+            solver.Sweeps,sweep_perc);
+        end 
 
         psi = solver.timeMesh(n);
         
@@ -95,22 +109,20 @@ function sol = forewardFlightSolver(data,solver)
             % Compute the angle of attack
             alfa_atg = (-data.F.*dlambdapv -dlambdap0 +data.G.*ddlambdav+...
                 data.G.*lambda(n,:).*(dtv(n)+betav))./vt;
-            alfa = data.theta + data.F.*tv(n) + atan(alfa_atg);
-            phi = atan(vp./vt);
+            alfa = real(data.theta + data.F.*tv(n) + atan(alfa_atg));
+            phi = real(atan(vp./vt));
             %Compute the mach number
             M = data.Mtip .* v;
-            %Equivalent lift and drag
-            i = 1;
-            for a = alfa-phi
-                [cl_sect,cd_sect,~]=cpcrcm(a,M(i));
-                Cl(i) = cl_sect;
-                Cd(i) = cd_sect;
-                i=i+1;
-            end
-            %Correction for the non circulatory part
-            Cl = Cl + 0.5*pi*data.cr.*((dtv(n)+beta(n-1))./lambda(n,:) +...
+            % Noncirculatory angle
+            alfa_nc = real(0.25*data.cr.*((dtv(n)+beta(n-1))./lambda(n,:) +...
                 ddlambdav./lambda(n,:)  - 0.25.*data.cr.*...
-                (ddtv(n)+ddbetav)./lambda(n,:));
+                (ddtv(n)+ddbetav)./lambda(n,:)));
+            for i = 1:length(alfa)
+                [cl_circ,cd_circ,~]=cpcrcm(alfa(i)-phi(i),M(i));
+                [cl_nc, cd_nc,~] = cpcrcm(alfa_nc(i),M(i));
+                Cl(i) = cl_circ+cl_nc;
+                Cd(i) = cd_circ+cd_nc;
+            end
             %--------------------------------------------------------------
             % BLADE ELEMENT MOMENTUM 
             %--------------------------------------------------------------
@@ -122,23 +134,25 @@ function sol = forewardFlightSolver(data,solver)
             ct(isnan(ct)) = 0.0;
             CT = sum(ct(1:index));
             % DREES MODEL FOR THE VELOCITY DISTRIBUTION
-            mux = data.mu*cos(data.alfashaft);
-            muy = data.mu*sin(data.alfashaft) + l_old;
-            chi = atan(mux./muy);
-            kx = (4/3).*(1-cos(chi)-1.8*data.mu^2)./(sin(chi));
-            ky = -2*data.mu;
+            atpp = data.alfashaft + 0.5*(beta_zero-beta_180);
+            kx = 1.2;
+            ky = 0;
             f = 1+r.*cos(psi).*kx + r.*sin(psi).*ky;
             %RECOMPUTE THE INFLOW RATIO
             err_in = solver.TolFzero+1;
             it_in = 0;
             l_old_in = l_old;
             while err_in > solver.TolFzero && it_in < solver.ItmaxFzero
-                l_new = 0.5*CT.*f./sqrt((data.mu.*cos(data.alfashaft)).^2 +...
-                    (data.mu*sin(data.alfashaft)+l_old_in).^2);
+                l_new = 0.5*CT.*f./sqrt((data.mu.*cos(atpp)).^2 +...
+                    (data.mu*sin(atpp)+l_old_in).^2);
                 err_in = norm(l_new-l_old_in);
                 it_in = it_in+1;
                 l_old_in = real(l_old_in + solver.DampFzero.*(l_new -l_old_in));
             end
+
+            ddbeta(n) = (data.LockeNumber/(4*pi))*sum((r-data.r0).*(v.^2)...
+                    .*(cos(phi).*Cl-sin(phi).*Cd))*data.dr*cos(beta(n)) - ...
+                    3*sin(beta(n))*sum((r-data.r0).*r*data.dr);
 
             %--------------------------------------------------------------
             % PREPARE NEXT ITERATION 
@@ -152,14 +166,8 @@ function sol = forewardFlightSolver(data,solver)
         % DYNAMIC EQUATION
         %------------------------------------------------------------------
         if n ~= solver.NT*solver.Sweeps
-            ddbeta(n) = 3*sum((1./data.mass).*(data.mesh(1:index)-...
-                data.r0).*ct(1:index)) - ...
-                3*sum((data.mesh(1:index)-data.r0)...
-                .*data.mesh(1:index).*sin(beta(n)));
-            beta(n+1) = beta(n) + ((23/12)*dbeta(n)-(16/12)*dbeta(n-1)+...
-                (5/12)*dbeta(n-2))*solver.dt;
-            dbeta(n+1) = dbeta(n) + ((23/12)*ddbeta(n)-(16/12)*ddbeta(n-1)+...
-                (5/12)*ddbeta(n-2))*solver.dt;
+            beta(n+1) = beta(n) + (1.5*dbeta(n)-0.5*dbeta(n-1))*solver.dt;
+            dbeta(n+1) = dbeta(n) + (1.5*ddbeta(n)-0.5*ddbeta(n-1))*solver.dt;
         end
         %------------------------------------------------------------------
         % SAVE RESULTS

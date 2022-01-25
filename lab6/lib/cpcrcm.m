@@ -1,4 +1,5 @@
 function [CLIFT,CDRAG,CMOME]=cpcrcm(APHIJ,EMIJ)
+APHIJ = real(APHIJ);
 
 CLIFT=0;
 CMOME=0;

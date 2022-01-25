@@ -1,0 +1,29 @@
+[X,Y,L,l] = sweepPlot(data,solver,sol.inflow_ratio,4);
+figure(1);
+contourf(X,Y,L,l,'edgecolor','none');
+colormap("jet");
+colorbar('southoutside');
+daspect([1 1 1]);
+title('Inflow Ratio');
+xlabel('x');
+ylabel('y');
+
+[X,Y,L,l] = sweepPlot(data,solver,sol.ct,4);
+figure(2);
+contourf(X,Y,L,l,'edgecolor','none');
+colormap("summer");
+colorbar('southoutside');
+daspect([1 1 1]);
+title('CT');
+xlabel('x');
+ylabel('y');
+
+[X,Y,L,l] = sweepPlot(data,solver,sol.ct,4);
+figure(2);
+contourf(X,Y,L,l,'edgecolor','none');
+colormap("summer");
+colorbar('southoutside');
+daspect([1 1 1]);
+title('CT');
+xlabel('x');
+ylabel('y');
